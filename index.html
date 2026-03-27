@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pusulabet Rulet</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --gold:#C9A84C; --gold-l:#E8C96E; --gold-dim:rgba(201,168,76,0.12);
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a;
+  --red:#922b21; --grn:#145a30;
+  --text:#F0EAD6; --dim:rgba(240,234,214,0.4);
+  --bdr:rgba(201,168,76,0.22);
+}
+body { background:var(--bg); font-family:Georgia,serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; color:var(--text); overflow-x:hidden; }
+
+.screen { width:100%; max-width:420px; min-height:100vh; display:none; flex-direction:column; align-items:center; padding:24px 20px 32px; }
+.screen.active { display:flex; }
+.outcome { width:100%; max-width:420px; min-height:100vh; display:none; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; text-align:center; }
+.outcome.active { display:flex; }
+
+.logo { font-size:30px; font-weight:900; font-style:italic; letter-spacing:1px; text-align:center; }
+.lp { color:#F5A623; } .lb { color:#fff; }
+.ltag { font-size:10px; color:var(--dim); letter-spacing:4px; text-transform:uppercase; margin-top:3px; text-align:center; }
+
+.divider { width:100%; height:1px; background:linear-gradient(90deg,transparent,var(--gold) 30%,var(--gold-l) 50%,var(--gold) 70%,transparent); margin:14px 0; opacity:.65; }
+
+/* LOGIN */
+.card { width:100%; background:var(--bg2); border:1px solid var(--bdr); border-radius:16px; padding:28px 22px; margin-top:6px; }
+.card-title { font-size:17px; color:var(--gold-l); text-align:center; margin-bottom:5px; letter-spacing:1px; }
+.card-sub { font-size:12px; color:var(--dim); text-align:center; margin-bottom:22px; line-height:1.65; }
+.lbl { font-size:10px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; display:block; }
+.inp { width:100%; background:var(--bg3); border:1px solid var(--bdr); border-radius:10px; padding:13px 15px; font-size:15px; font-family:Georgia,serif; color:var(--text); outline:none; transition:border-color .2s; margin-bottom:4px; }
+.inp:focus { border-color:var(--gold); }
+.inp::placeholder { color:var(--dim); }
+.err { font-size:11px; color:#e74c3c; display:none; margin-bottom:12px; }
+.btn-gold { width:100%; padding:15px; background:linear-gradient(135deg,#C9A84C,#E8C96E,#C9A84C); color:#080808; border:none; border-radius:10px; font-size:15px; font-weight:900; font-family:Georgia,serif; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:opacity .2s,transform .1s; margin-top:4px; }
+.btn-gold:active { transform:scale(.98); }
+.infobox { background:var(--gold-dim); border:1px solid var(--bdr); border-radius:10px; padding:12px 15px; margin-top:16px; font-size:12px; color:var(--gold-l); text-align:center; line-height:1.7; }
+
+/* GAME */
+.utag { font-size:12px; color:var(--gold); letter-spacing:1px; margin-bottom:6px; text-align:center; }
+.wheel-wrap { position:relative; width:290px; height:290px; margin:10px auto; flex-shrink:0; }
+.rim { position:absolute; inset:-7px; border-radius:50%; background:conic-gradient(#7a5c10 0deg,#C9A84C 20deg,#7a5c10 40deg,#C9A84C 60deg,#7a5c10 80deg,#C9A84C 100deg,#7a5c10 120deg,#C9A84C 140deg,#7a5c10 160deg,#C9A84C 180deg,#7a5c10 200deg,#C9A84C 220deg,#7a5c10 240deg,#C9A84C 260deg,#7a5c10 280deg,#C9A84C 300deg,#7a5c10 320deg,#C9A84C 340deg,#7a5c10 360deg); }
+#wc { position:absolute; inset:0; width:290px; height:290px; border-radius:50%; }
+.ptr { position:absolute; top:-13px; left:50%; transform:translateX(-50%); z-index:10; width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:24px solid var(--gold-l); filter:drop-shadow(0 2px 8px rgba(232,201,110,.9)); }
+
+.res-area { text-align:center; min-height:88px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:6px 0; width:100%; }
+.res-n { font-size:62px; font-weight:900; line-height:1; color:rgba(240,234,214,.1); transition:color .3s; }
+.res-n.red { color:#e74c3c; } .res-n.black { color:#f0f0f0; } .res-n.green { color:#27ae60; }
+.res-m { font-size:13px; color:var(--dim); margin-top:5px; letter-spacing:1px; min-height:18px; }
+
+.btn-spin { width:100%; max-width:270px; padding:16px; background:linear-gradient(135deg,#C9A84C,#E8C96E,#C9A84C); color:#080808; border:none; border-radius:12px; font-size:17px; font-weight:900; font-family:Georgia,serif; letter-spacing:3px; text-transform:uppercase; cursor:pointer; transition:opacity .2s,transform .1s; margin:4px auto 12px; display:block; }
+.btn-spin:active { transform:scale(.98); }
+.btn-spin:disabled { opacity:.3; cursor:not-allowed; transform:none; }
+
+.hist-lbl { font-size:10px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; text-align:center; opacity:0; }
+.hist-chips { display:flex; gap:5px; justify-content:center; flex-wrap:wrap; min-height:26px; }
+.chip { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; border:1.5px solid rgba(255,255,255,.15); }
+.chip.red { background:var(--red); } .chip.black { background:#222; border-color:rgba(255,255,255,.25); } .chip.green { background:var(--grn); }
+
+/* OUTCOME */
+.big-icon { font-size:70px; margin-bottom:14px; animation:bounce .6s ease-out; }
+@keyframes bounce { 0%{transform:scale(0);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+.win-t { font-size:24px; font-weight:900; color:var(--gold-l); margin-bottom:10px; letter-spacing:1px; }
+.win-n { display:inline-block; font-size:52px; font-weight:900; color:var(--gold-l); background:var(--gold-dim); border:1px solid var(--bdr); border-radius:14px; padding:8px 30px; margin-bottom:18px; }
+.win-body { font-size:14px; color:var(--text); line-height:1.85; margin-bottom:22px; max-width:310px; }
+.btn-lnk { display:block; width:100%; max-width:310px; padding:16px; background:linear-gradient(135deg,#C9A84C,#E8C96E,#C9A84C); color:#080808; border:none; border-radius:12px; font-size:15px; font-weight:900; font-family:Georgia,serif; letter-spacing:1px; text-decoration:none; cursor:pointer; margin-bottom:10px; }
+.lose-t { font-size:22px; font-weight:700; color:var(--dim); margin-bottom:8px; }
+.lose-n { display:inline-block; font-size:52px; font-weight:900; color:#e74c3c; margin-bottom:14px; }
+.lose-body { font-size:14px; color:var(--dim); line-height:1.8; max-width:290px; }
+
+.fnote { font-size:10px; color:rgba(255,255,255,.13); margin-top:20px; letter-spacing:1px; text-align:center; }
+@keyframes pop { 0%{transform:scale(.6);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+.pop { animation:pop .35s ease-out forwards; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="screen active" id="sLogin">
+  <div class="logo"><span class="lp">Pusula</span><span class="lb">bet</span></div>
+  <div class="ltag">European Roulette</div>
+  <div class="divider"></div>
+  <div class="card">
+    <div class="card-title">Hoş Geldin!</div>
+    <div class="card-sub">Devam etmek için Pusulabet<br>kullanıcı adını gir.</div>
+    <label class="lbl" for="uInp">Pusulabet Kullanıcı Adı</label>
+    <input class="inp" id="uInp" type="text" placeholder="kullanıcı adın" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="err" id="uErr">Lütfen kullanıcı adını gir.</div>
+    <button class="btn-gold" onclick="startGame()">Devam Et</button>
+    <div class="infobox">🎰 20 veya 26 sayısını çıkarırsan<br>bonus kazanırsın!</div>
+  </div>
+  <div class="fnote">18+ · Sorumlu Oyna · pusulabet.com</div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="sGame">
+  <div class="logo"><span class="lp">Pusula</span><span class="lb">bet</span></div>
+  <div class="ltag">European Roulette</div>
+  <div class="divider"></div>
+  <div class="utag" id="utag"></div>
+  <div class="wheel-wrap">
+    <div class="rim"></div>
+    <canvas id="wc" width="580" height="580"></canvas>
+    <div class="ptr"></div>
+  </div>
+  <div class="res-area">
+    <div class="res-n" id="rn">?</div>
+    <div class="res-m" id="rm"></div>
+  </div>
+  <button class="btn-spin" id="bSpin" onclick="spinWheel()">ÇEVİR</button>
+  <div class="hist-lbl" id="hLbl">Son Atışlar</div>
+  <div class="hist-chips" id="hChips"></div>
+  <div class="fnote" style="margin-top:14px">18+ · Sorumlu Oyna · pusulabet.com</div>
+</div>
+
+<!-- WIN -->
+<div class="outcome" id="sWin">
+  <div class="logo"><span class="lp">Pusula</span><span class="lb">bet</span></div>
+  <div class="divider" style="margin-bottom:20px"></div>
+  <div class="big-icon">🏆</div>
+  <div class="win-t">Tebrikler, Kazandın!</div>
+  <div class="win-n" id="wNum">20</div>
+  <div class="win-body">Bonus kısa süre içerisinde hesabına eklenecek!<br>Devamı için Canlı Rulet masamıza giriş yapabilirsin.</div>
+  <a class="btn-lnk" href="https://t2m.io/pusularoulette" target="_blank">🎰 Canlı Rulet'e Giriş Yap</a>
+  <div class="fnote">18+ · Sorumlu Oyna · pusulabet.com</div>
+</div>
+
+<!-- LOSE -->
+<div class="outcome" id="sLose">
+  <div class="logo"><span class="lp">Pusula</span><span class="lb">bet</span></div>
+  <div class="divider" style="margin-bottom:20px"></div>
+  <div class="big-icon" style="animation:none">🎰</div>
+  <div class="lose-n" id="lNum">15</div>
+  <div class="lose-t">Bu sefer olmadı!</div>
+  <div class="lose-body">Şansın yaver gitmedi. Canlı rulet masalarımızda şansını dene!</div>
+  <a class="btn-lnk" href="https://t2m.io/pusularoulette" target="_blank" style="margin-top:20px">🎰 Canlı Rulet'e Giriş Yap</a>
+  <div class="fnote">18+ · Sorumlu Oyna · pusulabet.com</div>
+</div>
+
+<script>
+const WINS = [20, 26];
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw6kxo6bh1SFW_iILuf2iSshjF3BX8Hyr8xmZUfgU5Y9dkS0uxlR1IPmWdCI4cCdsKH/exec";
+const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+
+let username='', angle=0, spinning=false, hasSpun=false, history=[], tgUser={};
+
+try {
+  const tg=window.Telegram.WebApp;
+  tg.ready(); tg.expand();
+  tg.setHeaderColor && tg.setHeaderColor('#0a0a0a');
+  tg.setBackgroundColor && tg.setBackgroundColor('#0a0a0a');
+  if(tg.initDataUnsafe && tg.initDataUnsafe.user) tgUser=tg.initDataUnsafe.user;
+} catch(e){}
+
+function getKey(){ return 'pb_'+(tgUser.id||'g'); }
+function alreadySpun(){ try{return localStorage.getItem(getKey())==='1';}catch(e){return false;} }
+function markSpun(){ try{localStorage.setItem(getKey(),'1');}catch(e){} }
+
+function showScreen(id){
+  document.querySelectorAll('.screen,.outcome').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame(){
+  const v=document.getElementById('uInp').value.trim();
+  const err=document.getElementById('uErr');
+  if(!v){err.style.display='block';return;}
+  err.style.display='none';
+  username=v;
+  document.getElementById('utag').textContent='👤 '+username;
+  if(alreadySpun() && !isAdmin()){
+    const b=document.getElementById('bSpin');
+    b.disabled=true; b.textContent='ÇOKTAN ÇEVİRDİN';
+  }
+  showScreen('sGame');
+  drawWheel(angle);
+}
+
+// ── CANVAS ──
+const canvas=document.getElementById('wc');
+const ctx=canvas.getContext('2d');
+const CX=290,CY=290,OR=284,IR=76;
+const SEG=(2*Math.PI)/ORDER.length;
+
+function drawWheel(a){
+  ctx.clearRect(0,0,580,580);
+  ctx.save();
+  ctx.translate(CX,CY);
+
+  // dark base
+  ctx.beginPath();ctx.arc(0,0,OR,0,2*Math.PI);
+  ctx.fillStyle='#060606';ctx.fill();
+
+  ctx.rotate(a);
+
+  ORDER.forEach((num,i)=>{
+    const s=i*SEG-Math.PI/2, e=s+SEG;
+    const isWin=WINS.includes(num);
+    let col=num===0?'#145a30':(RED.has(num)?'#8b1a1a':'#0f0f0f');
+    if(isWin) col=num===0?'#145a30':(RED.has(num)?'#b02020':'#1a1a1a');
+
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,OR-2,s,e);ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle='rgba(201,168,76,0.6)';ctx.lineWidth=0.7;ctx.stroke();
+
+    const mid=s+SEG/2, tr=OR-38;
+    ctx.save();
+    ctx.rotate(mid);ctx.translate(tr,0);ctx.rotate(Math.PI/2);
+    ctx.fillStyle=isWin?'#E8C96E':'#ddd';
+    ctx.font=(isWin?'bold ':'bold ')+'13px Georgia';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(num,0,0);
+    ctx.restore();
+  });
+
+  ctx.rotate(-a);
+
+  // gold ring detail
+  ctx.beginPath();ctx.arc(0,0,OR-2,0,2*Math.PI);
+  ctx.strokeStyle='rgba(201,168,76,0.3)';ctx.lineWidth=1;ctx.stroke();
+
+  // inner hub
+  ctx.beginPath();ctx.arc(0,0,IR,0,2*Math.PI);
+  ctx.fillStyle='#080808';ctx.strokeStyle='#C9A84C';ctx.lineWidth=2.5;ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,IR-9,0,2*Math.PI);ctx.fillStyle='#0c0c0c';ctx.fill();
+
+  ctx.font='bold italic 12px Georgia';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#F5A623';ctx.fillText('Pusula',0,-9);
+  ctx.fillStyle='#fff';ctx.fillText('bet',0,8);
+  ctx.restore();
+}
+
+drawWheel(0);
+
+function getColor(n){ if(n===0)return 'green'; return RED.has(n)?'red':'black'; }
+
+const ADMIN_ID = '8355860067';
+const ADMIN_USERNAME = 'brucetest';
+function isAdmin(){
+  return String(tgUser.id)===ADMIN_ID || 
+         (tgUser.username && tgUser.username===ADMIN_USERNAME);
+}
+
+function spinWheel(){
+  if(spinning)return;
+  if(hasSpun && !isAdmin())return;
+  spinning=true;
+  document.getElementById('bSpin').disabled=true;
+  document.getElementById('rn').className='res-n';
+  document.getElementById('rn').textContent='?';
+  document.getElementById('rm').textContent='';
+
+  // Tamamen rastgele sonuç
+  let result;
+  const roll = Math.random();
+  if(roll < 0.10) {
+    result = WINS[Math.floor(Math.random()*WINS.length)];
+  } else {
+    const losers = ORDER.filter(n=>!WINS.includes(n));
+    result = losers[Math.floor(Math.random()*losers.length)];
+  }
+  const idx=ORDER.indexOf(result);
+  const target=-(idx*SEG+SEG/2);
+  const spins=(7+Math.floor(Math.random()*4))*2*Math.PI;
+  const final=target-spins;
+  const dur=5500, t0=performance.now(), a0=angle;
+
+  function ease(t){return 1-Math.pow(1-t,4);}
+  function frame(now){
+    const p=Math.min((now-t0)/dur,1);
+    angle=a0+(final-a0)*ease(p);
+    drawWheel(angle);
+    if(p<1){requestAnimationFrame(frame);}
+    else{
+      angle=final%(2*Math.PI);
+      drawWheel(angle);
+      spinning=false;
+      if(!isAdmin()){ hasSpun=true; markSpun(); }
+      showResult(result);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showResult(n){
+  const col=getColor(n);
+  const names={red:'Kırmızı',black:'Siyah',green:'Yeşil'};
+  const rn=document.getElementById('rn');
+  rn.textContent=n; rn.className='res-n pop '+col;
+  let meta=names[col];
+  if(n!==0) meta+=' · '+(n%2===0?'Çift':'Tek')+' · '+(n<=18?'1-18':'19-36');
+  document.getElementById('rm').textContent=meta;
+
+  history.unshift({n,col});
+  if(history.length>10)history.pop();
+  document.getElementById('hLbl').style.opacity='1';
+  document.getElementById('hChips').innerHTML=history.map(h=>`<div class="chip ${h.col}">${h.n}</div>`).join('');
+
+  try{window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');}catch(e){}
+
+  sendToSheets(n, col);
+
+  const won = WINS.includes(n);
+  if(isAdmin()){
+    // Admin: ekran degismesin, buton tekrar aktif olsun
+    document.getElementById('rm').textContent=meta+(won?' 🏆 KAZANDIN!':'');
+    setTimeout(()=>{
+      const b=document.getElementById('bSpin');
+      b.disabled=false;
+      b.textContent='TEKRAR ÇEVİR';
+    }, 1500);
+  } else {
+    // Normal kullanici: kazanan/kaybeden ekrani goster
+    setTimeout(()=>{
+      if(won){
+        document.getElementById('wNum').textContent=n;
+        showScreen('sWin');
+      } else {
+        document.getElementById('lNum').textContent=n;
+        showScreen('sLose');
+      }
+    }, 2400);
+  }
+}
+
+function sendToSheets(number, color){
+  if(!SHEETS_URL||SHEETS_URL.includes('BURAYA'))return;
+  const won=WINS.includes(number);
+  if(!won)return;
+  const tgName=tgUser.username?'@'+tgUser.username:(tgUser.first_name||'Bilinmiyor');
+  const now=new Date().toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'});
+  fetch(SHEETS_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({
+      tarih:now,
+      pusulabet_kullanici:username,
+      telegram_kullanici:tgName,
+      telegram_id:String(tgUser.id||''),
+      sayi:number,
+      renk:color==='red'?'Kırmızı':color==='black'?'Siyah':'Yeşil',
+      kazandi:won?'EVET ✅':'Hayır ❌'
+    })
+  }).catch(()=>{});
+}
+</script>
+</body>
+</html>
