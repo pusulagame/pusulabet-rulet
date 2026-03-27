@@ -145,13 +145,17 @@ body { background:var(--bg); font-family:Georgia,serif; min-height:100vh; displa
 </div>
 
 <script>
-const ETKINLIK_AKTIF = true;
 const WINS = [20, 26];
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbw6kxo6bh1SFW_iILuf2iSshjF3BX8Hyr8xmZUfgU5Y9dkS0uxlR1IPmWdCI4cCdsKH/exec";
 const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 
 let username='', angle=0, spinning=false, hasSpun=false, history=[], tgUser={};
+
+// Onbellek atlatma
+if(!window.location.search.includes('v=')){
+  window.location.replace(window.location.href + '?v=' + Date.now());
+}
 
 try {
   const tg=window.Telegram.WebApp;
@@ -170,16 +174,30 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
 }
 
+function etkinlikKontrol(callback){
+  fetch(SHEETS_URL + "?action=durum")
+    .then(r=>r.json())
+    .then(d=>callback(d.aktif))
+    .catch(()=>callback(true));
+}
+
 function startGame(){
-  if(!ETKINLIK_AKTIF){
-    document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:16px">&#127937;</div><div style="font-size:18px;font-weight:700;color:#E8C96E;margin-bottom:12px">Etkinlik Sonlanmistir</div><div style="font-size:14px;color:rgba(240,234,214,0.6);line-height:1.8">Kazanmak icin takipte kal!</div></div>';
-    return;
-  }
   const v=document.getElementById('uInp').value.trim();
   const err=document.getElementById('uErr');
   if(!v){err.style.display='block';return;}
   err.style.display='none';
   username=v;
+  document.getElementById('btnStart') && (document.getElementById('btnStart').disabled=true);
+  etkinlikKontrol(function(aktif){
+    if(!aktif){
+      document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:16px">&#127937;</div><div style="font-size:18px;font-weight:700;color:#E8C96E;margin-bottom:12px">Etkinlik Sonlanmistir</div><div style="font-size:14px;color:rgba(240,234,214,0.6);line-height:1.8">Kazanmak icin takipte kal!</div></div>';
+      return;
+    }
+    devamEt();
+  });
+}
+
+function devamEt(){
   document.getElementById('utag').textContent='👤 '+username;
   if(alreadySpun() && !isAdmin()){
     const b=document.getElementById('bSpin');
